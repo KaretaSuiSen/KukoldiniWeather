@@ -1,10 +1,22 @@
+from contextlib import asynccontextmanager
+
 import httpx
 from fastapi import FastAPI, HTTPException
 
+from app.database import DatabaseManager
 from app.services import WeatherService
 
-app = FastAPI(title="KukoldiniWeather")
 weather_service = WeatherService()
+weather_database = DatabaseManager("weather.db")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await weather_database.init_db()
+    yield
+
+
+app = FastAPI(title="KukoldiniWeather", lifespan=lifespan)
 
 
 @app.get("/api/weather/{city}")
@@ -20,4 +32,13 @@ async def get_city_weather(city: str):
     if not data:
         raise HTTPException(status_code=404, detail="Город не найден")
 
+    await weather_database.add_record(
+        data["city"], data["avg_temp"], data["avg_humidity"], data["avg_wind_kmh"]
+    )
+
     return data
+
+
+@app.get("/api/history")
+async def get_weather_history(limit: int = 5):
+    return await weather_database.get_recent(limit)
