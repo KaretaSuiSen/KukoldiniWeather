@@ -7,6 +7,7 @@ class WeatherService:
     GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
     OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
     MET_NORWAY_URL = "https://api.met.no/weatherapi/locationforecast/2.0/compact"
+    WTTR_IN_URL = "https://wttr.in"
     HEADERS = {"User-Agent": "KukoldiniWeather/1.0 github.com/myatavchae"}
 
     def __init__(self, timeout: float = 10.0):
@@ -75,27 +76,46 @@ class WeatherService:
             "wind_kmh": round(details["wind_speed"] * 3.6, 1),
         }
 
+    async def _fetch_wttr_in(
+        self, client: httpx.AsyncClient, lat: float, lon: float
+    ) -> dict:
+        res = await client.get(
+            f"{self.WTTR_IN_URL}/{round(lat, 4)},{round(lon, 4)}",
+            params={"format": "j1"},
+            headers=self.HEADERS,
+        )
+        res.raise_for_status()
+        data = res.json()
+        current_condition = data["current_condition"][0]
+        return {
+            "source": "wttr_in",
+            "temp": int(current_condition.get("temp_C")),
+            "humidity": int(current_condition.get("humidity")),
+            "wind_kmh": int(current_condition.get("windspeedKmph")),
+        }
+
     async def get_weather(self, city: str) -> dict | None:
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             coords = await self._get_coordinates(client, city)
 
             if coords:
-                res_1, res_2 = await asyncio.gather(
+                res_1, res_2, res_3 = await asyncio.gather(
                     self._fetch_open_meteo(client, coords["lat"], coords["lon"]),
                     self._fetch_met_norway(client, coords["lat"], coords["lon"]),
+                    self._fetch_wttr_in(client, coords["lat"], coords["lon"]),
                 )
                 return {
                     "city": f"{coords['city']}, {coords['country']}"
                     if coords.get("country")
                     else coords["city"],
-                    "avg_temp": round((res_1["temp"] + res_2["temp"]) / 2, 1),
+                    "avg_temp": round((res_1["temp"] + res_2["temp"] + res_3['temp']) / 3, 1),
                     "avg_humidity": round(
-                        (res_1["humidity"] + res_2["humidity"]) / 2, 1
+                        (res_1["humidity"] + res_2["humidity"] + res_3['humidity']) / 3, 1
                     ),
                     "avg_wind_kmh": round(
-                        (res_1["wind_kmh"] + res_2["wind_kmh"]) / 2, 1
+                        (res_1["wind_kmh"] + res_2["wind_kmh"] + res_3['wind_kmh']) / 3, 1
                     ),
-                    "sources": [res_1, res_2],
+                    "sources": [res_1, res_2, res_3],
                 }
             return None
 
