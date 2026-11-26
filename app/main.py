@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 
 import httpx
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, staticfiles, templating
 
 from app.database import DatabaseManager
 from app.services import WeatherService
@@ -17,6 +17,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="KukoldiniWeather", lifespan=lifespan)
+app.mount("/static", staticfiles.StaticFiles(directory="app/static"), name="static")
+templates = templating.Jinja2Templates(directory="app/templates")
 
 
 @app.get("/api/weather/{city}")
