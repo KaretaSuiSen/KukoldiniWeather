@@ -1,1 +1,54 @@
-<link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KukoldiniWeather</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+</head>
+<body>
+    <main>
+        <h1>KukoldiniWeather</h1>
+
+        <form method="get" action="/">
+            <input type="text" name="city" placeholder="Введите город">
+            <button type="submit">Узнать погоду</button>
+        </form>
+
+        {% if history %}
+            <div class="history">
+                <span>Недавно искали:</span>
+                {% for item in history %}
+                    <a href="/?city={{ item.city }}" class="history_tag">{{ item.city }}</a>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% if error %}
+            <p class="error_message"> {{ error }}</p>
+        {% endif %}
+
+        {% if weather %}
+            <div class="avg_data">
+                <h2>Город - {{ weather.city }}</h2>
+                <p class="avg_temp">Средняя вемпература - {{ weather.avg_temp }} °C</p>
+                <div class="avg_stats">
+                    <p>Средняя влажность - {{ weather.avg_humidity }}%</p>
+                    <p>Средняя скорость ветра - {{ weather.avg_wind_kmh }} км/ч</p>
+                </div>
+            </div>
+
+            <div>
+                {% for src in weather.sources %}
+                    <div class="source">
+                        <h3>Информационный ресурс: {{ src.source }}</h3>
+                        <p>Температура - {{ src.temp }} °C</p>
+                        <p>Влажность - {{ src.humidity }}%</p>
+                        <p>Скорость ветра - {{ src.wind_kmh }} км/ч</p>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </main>
+</body>
+</html>

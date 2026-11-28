@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 
 import httpx
-from fastapi import FastAPI, HTTPException, staticfiles, templating, Request
+from fastapi import FastAPI, HTTPException, Request, staticfiles, templating
 
 from app.database import DatabaseManager
 from app.services import WeatherService
